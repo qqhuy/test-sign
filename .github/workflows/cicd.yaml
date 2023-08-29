@@ -1,0 +1,41 @@
+name: Deploy to Staging Kubernetes Cluster
+
+on:
+  push:
+    branches:
+      - 'master'
+  workflow_dispatch:
+    inputs:
+      build-app:
+        type: boolean
+        required: false
+        description: 'Check if build app'
+        default: true
+      build-worker-scan-user-statistic:
+        type: boolean
+        required: false
+        description: 'Check if build worker scan user statistic'
+        default: false
+jobs:
+  export-var:
+    runs-on: ubuntu-latest
+    outputs:
+      build-app: ${{ env.build-app }}
+      build-worker-scan-user-statistic: ${{ env.build-worker-scan-user-statistic }}
+    steps:
+      - id: build
+        run: echo "build=$(echo "${{ github.event.head_commit.message }}" | grep '\[' | sed 's/^.*\[/[/')" >> $GITHUB_ENV
+      - id: build-app
+        if: contains(env.build, 'all') || env.build == '' || contains(env.build, 'app') || github.event.inputs.build-app == true
+        run: echo "build-app=1" >> $GITHUB_ENV
+      - id: build-worker-scan-leaderboard
+        if: contains(env.build, 'all') || contains(env.build, 'worker-scan-user-statistic') || github.event.inputs.build-worker-scan-user-statistic == true
+        run: echo "build-worker-scan-user-statistic=1" >> $GITHUB_ENV
+  build:
+    name: Build
+    needs: export-var
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout files
+        run: echo ${{ github.event.inputs.build-app }}
+
